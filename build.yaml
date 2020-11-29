@@ -1,0 +1,31 @@
+- name: build
+  hosts: localhost
+  tasks:
+  # This task will get a list of all the avaliable AMI filtered by name and latest tag
+    - name: "get latest ami for {{ ami_name }}"
+      action:
+        module: "{{ ansible_version.full is version_compare('2.9', '>=') | ternary ('ec2_ami_info', 'ec2_ami_facts') }}"
+        filters:
+          name: "test-*"
+          state: "available"
+          "tag:Latest": 'True'
+      register: matched_latest_ami_output
+
+  # This will sort the list so that the most recent AMI is at the top
+    - name: sort latest AMI list
+      set_fact:
+        sorted_latest_ami_list: "{{ matched_latest_ami_output.images | sort(reverse=True,attribute='creation_date') | list }}"
+
+  # Will return the first item in the list if the list has items
+    - name: latest ami for {{ ami_name }} is {{ sorted_latest_ami_list[0].image_id }}
+      set_fact:
+        ami_latest: "{{ sorted_latest_ami_list[0].image_id }}"
+      when:
+        - sorted_latest_ami_list | length > 0
+
+  # Will return an empty string if the list has no items
+    - name: no latest ami for {{ ami_name }}
+      set_fact:
+        ami_latest: ""
+      when:
+        - sorted_latest_ami_list | length <= 0
