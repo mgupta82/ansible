@@ -1,0 +1,6 @@
+- name: deploy
+  hosts: test.mukeshgupta.info
+  remote_user: ec2-user
+  tasks:
+    - name: Execute command
+      command: ls
